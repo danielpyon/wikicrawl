@@ -2,13 +2,14 @@ from bs4 import BeautifulSoup, SoupStrainer
 from requests import get
 from re import compile, match
 from collections import deque
+from json import dumps
 
 if __name__ == '__main__':
-    START_PAGE = 'https://en.wikipedia.org/wiki/Siteswap'
+    START_PAGE = 'https://en.wikipedia.org/wiki/NOP_slide'
 
     # Links should start with "/wiki/" and must exclude special Wikipedia pages
     # Note that Main_Page is excluded (it has no relation to the current page)
-    pattern = compile('^/wiki/[^(File:)(Wikipedia:)(Portal:)(Help:)(Special:)(Talk:)(Category:)(Main_Page)]')
+    pattern = compile('^/wiki/[^(File:)(Wikipedia:)(Portal:)(Help:)(Special:)(Talk:)(Category:)(Template:)(Main_Page)]')
 
     visited = set()
     visited.add(START_PAGE)
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     popularity = list()
 
     while len(to_visit) > 0:
-        parent_url, parent_depth = to_visit.pop()
+        parent_url, parent_depth = to_visit.popleft()
         html = get(parent_url).text
         soup = BeautifulSoup(html, 'html.parser')
 
@@ -45,5 +46,7 @@ if __name__ == '__main__':
                 # The child depth is the parent depth + 1
                 to_visit.append((child_url, child_depth))
     
-    popularity = sorted(popularity, lambda x: x[1])
-    print(popularity)
+    popularity = sorted(popularity, key=lambda x: x[1])
+    with open('output.json', 'w') as out:
+        out.write(dumps(popularity))
+
