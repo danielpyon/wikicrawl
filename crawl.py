@@ -7,7 +7,8 @@ if __name__ == '__main__':
     START_PAGE = 'https://en.wikipedia.org/wiki/Siteswap'
 
     # Links should start with "/wiki/" and must exclude special Wikipedia pages
-    pattern = compile('^/wiki/[^(File:)(Wikipedia:)(Portal:)(Help:)(Special:)(Talk:)(Category:)]')
+    # Note that Main_Page is excluded (it has no relation to the current page)
+    pattern = compile('^/wiki/[^(File:)(Wikipedia:)(Portal:)(Help:)(Special:)(Talk:)(Category:)(Main_Page)]')
 
     visited = set()
     visited.add(START_PAGE)
@@ -20,13 +21,20 @@ if __name__ == '__main__':
     popularity = list()
 
     while len(to_visit) > 0:
-        parent_url, parent_depth = to_visit.popleft()
+        parent_url, parent_depth = to_visit.pop()
         html = get(parent_url).text
         soup = BeautifulSoup(html, 'html.parser')
 
+        print(f'Processing {parent_url}, which has depth {parent_depth}')
+
         links = soup.find_all('a', href=True)
-        popularity.append((parent_url, len(links)))
         
+        if parent_depth <= 2:
+            popularity.append((parent_url, len(links)))
+        if parent_depth == 2:
+            # Don't add children
+            continue
+
         for link in links:
             child_url = 'https://en.wikipedia.org' + link['href']
             child_depth = parent_depth + 1
